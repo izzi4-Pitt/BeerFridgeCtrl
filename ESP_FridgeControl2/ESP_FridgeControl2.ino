@@ -19,7 +19,7 @@
 // Import required libraries
 #include <ESP8266WiFi.h>
 #include "ESPAsyncWebServer.h"
-#include "secrets.h"
+#include <secrets.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <OneWire.h>

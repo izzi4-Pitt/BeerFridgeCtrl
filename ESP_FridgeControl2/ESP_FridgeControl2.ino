@@ -19,7 +19,7 @@
 // Import required libraries
 #include <ESP8266WiFi.h>
 #include "ESPAsyncWebServer.h"
-#include <secrets.h>
+#include "secrets.h"
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <OneWire.h>
@@ -67,6 +67,7 @@ int TempOffTime = 0;
 int TempLastOnTime = 0;
 int TempCycleCount = 0;
 
+int BadReadings = 0;
 
 
 int HumidProtectDelaySeconds = 21600;  // Off time of 6 hours
@@ -301,9 +302,9 @@ void SerialUpdate() {
   //  Serial.printf("Fridge Min Run Time  = %d\r\n", TempMinRunSeconds);
   //  Serial.printf("Fridge Protect Time  = %d\r\n", TempProtectDelaySeconds);
   //  Serial.println("     Message ->" + TempText);
-  Serial.println("");
-  Serial.printf("Humid Status   = %d\r\n", HumidStatus);
-  Serial.printf("Humid Current Humid  = %d\r\n", HumidCurrent);
+//  Serial.println("");
+//  Serial.printf("Humid Status   = %d\r\n", HumidStatus);
+//  Serial.printf("Humid Current Humid  = %d\r\n", HumidCurrent);
   //  Serial.printf("Humid Target Humid = %d\r\n", HumidTarget);
   //  Serial.printf("Humid Off Humid = %d\r\n", HumidTarget - HumidLowOffset);
   //  Serial.printf("Humid Start Time  = %d\r\n", HumidStartTime / 1000);
@@ -373,23 +374,27 @@ void loop() {
 
   // Connect or reconnect to WiFi
   if (WiFi.status() != WL_CONNECTED) {
-
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(SECRET_SSID);
-    int retries = 0;
-    while (WiFi.status() != WL_CONNECTED && retries < 10) {
-      WiFi.begin(ssid, pass); // Connect to WPA/WPA2 network. Change this line if using open or WEP network
-      Serial.print(".");
-      delay(5000);
-    }
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("\nConnected.\n");
-      Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-      ArduinoOTA.begin();
-    }
-    else {
-      Serial.print("Connection Failure. Delaying before next attempt");
-      delay(30000);
+    while (WiFi.status() != WL_CONNECTED){ 
+      Serial.print("Attempting to connect to SSID: ");
+      Serial.println(SECRET_SSID);
+      int retries = 0;
+      while (WiFi.status() != WL_CONNECTED && retries < 15) {
+        WiFi.begin(ssid, pass); // Connect to WPA/WPA2 network. Change this line if using open or WEP network
+        Serial.print(".");
+        retries = retries+1;
+        delay(6000);
+      }
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nConnected.\n");
+        Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+        ArduinoOTA.begin();
+      }
+      else {
+        Serial.print("Connection Failure. Delaying before next attempt");
+        WiFi.disconnect(true);
+        retries = 0;
+        delay(15000);
+      }
     }
   }
 
@@ -419,7 +424,18 @@ void loop() {
     LoopStartTime = millis();
     sensors.requestTemperatures();
     liveValue = sensors.getTempF(sensor1); // Gets the values of the temperature
-    TempCurrent = AddAndGetSmoothedValue(SmoothingOWSTemp, liveValue);
+    Serial.println(String(liveValue));
+    if (liveValue < -1){
+      WebSerial.println(String(liveValue));
+      BadReadings=BadReadings+1;
+      if (BadReadings > 200){
+        ESP.restart();
+      }
+    }  
+    else {
+      BadReadings=0;
+      TempCurrent = AddAndGetSmoothedValue(SmoothingOWSTemp, liveValue);
+    }
   }
 
 
@@ -430,7 +446,7 @@ void loop() {
     int SecondsOff = (millis() - TempEndTime) / 1000;
     TempOffTime = SecondsOff;
     if ((millis() - TempEndTime) >= (TempProtectDelaySeconds * 1000)) {
-      TempText = ("  OK To Turn on Fridge") ;  //+ String(TempCurrent) + " > " + String(TempTarget) + "  OK To Turn on Fridge");
+      //TempText = ("  OK To Turn on Fridge") ;  //+ String(TempCurrent) + " > " + String(TempTarget) + "  OK To Turn on Fridge");
       if (TempCurrent > TempTarget) {
         TempStatus = 1;
         TempStartTime = millis();
@@ -450,7 +466,7 @@ void loop() {
       }
     }
     else {
-      TempText = ("Fridge is on but Not On Long Enough ");// + String((millis() - TempStartTime)) + "  " + String(TempMinRunSeconds * 1000));
+      //TempText = ("Fridge is on but Not On Long Enough ");// + String((millis() - TempStartTime)) + "  " + String(TempMinRunSeconds * 1000));
     }
     TempEndTime = millis();
   }

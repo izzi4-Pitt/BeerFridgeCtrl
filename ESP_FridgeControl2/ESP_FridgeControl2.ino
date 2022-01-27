@@ -24,13 +24,13 @@
 #include <DHT.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <ArduinoOTA.h> //owa
+//#include <ArduinoOTA.h>                       //OTA DISABLE
 #include "Webpage.h"
 #include <WebSerial.h>
 #include <ESPAsyncTCP.h>
 
 // VERSION CONTROL
-const String Version = "V1.3";
+const String Version = "V1.4";
 
 // Network credentials
 char ssid[] = SECRET_SSID;   // your network SSID (name)
@@ -69,7 +69,6 @@ int TempCycleCount = 0;
 
 int BadReadings = 0;
 
-
 int HumidProtectDelaySeconds = 21600;  // Off time of 6 hours
 int HumidMinRunSeconds = 5400;   // Min run time 1.5 hour
 int HumidMaxRunSeconds = 7200;  // max run time 2 hours
@@ -107,39 +106,39 @@ AsyncWebServer server(80);  //port 80
 //OTA CONTENT BELOW************************************************************************************
 const char* host = "ChestFreezer";       //OTA SETUP INFORMATION
 
-//OTA SETUP
-void SetupOTA() {
-  ArduinoOTA.setHostname(host);
-  // ArduinoOTA.setPort(3232);  // Port defaults to 3232
-  // ArduinoOTA.setPassword("Fridge");
-
-  ArduinoOTA.onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH)
-      type = "sketch";
-    else // U_SPIFFS
-      type = "filesystem";
-
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    Serial.println("Start updating " + type);
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
-  });
-  //ArduinoOTA.begin();
-}
-// OTA END ***********************************************************************************************
+////OTA SETUP                                 //OTA DISABLE
+//void SetupOTA() {
+//  ArduinoOTA.setHostname(host);
+//  // ArduinoOTA.setPort(3232);  // Port defaults to 3232
+//  // ArduinoOTA.setPassword("Fridge");
+//
+//  ArduinoOTA.onStart([]() {
+//    String type;
+//    if (ArduinoOTA.getCommand() == U_FLASH)
+//      type = "sketch";
+//    else // U_SPIFFS
+//      type = "filesystem";
+//
+//    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+//    Serial.println("Start updating " + type);
+//  });
+//  ArduinoOTA.onEnd([]() {
+//    Serial.println("\nEnd");
+//  });
+//  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+//    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+//  });
+//  ArduinoOTA.onError([](ota_error_t error) {
+//    Serial.printf("Error[%u]: ", error);
+//    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+//    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+//    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+//    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+//    else if (error == OTA_END_ERROR) Serial.println("End Failed");
+//  });
+//  //ArduinoOTA.begin();
+//}
+//// OTA END ***********************************************************************************************
 
 void SetupSmoothing(float A[]) {
   for (byte i = 0; i < (positions); i++) {
@@ -284,7 +283,7 @@ void setup() {
   server.begin();
   dht.begin();
   sensors.begin();
-  SetupOTA();
+//  SetupOTA();                                   //OTA DISABLE
   SetupSmoothing(SmoothingDHTTemp);
   SetupSmoothing(SmoothingDHTHumid);
   SetupSmoothing(SmoothingOWSTemp);
@@ -302,9 +301,9 @@ void SerialUpdate() {
   //  Serial.printf("Fridge Min Run Time  = %d\r\n", TempMinRunSeconds);
   //  Serial.printf("Fridge Protect Time  = %d\r\n", TempProtectDelaySeconds);
   //  Serial.println("     Message ->" + TempText);
-//  Serial.println("");
-//  Serial.printf("Humid Status   = %d\r\n", HumidStatus);
-//  Serial.printf("Humid Current Humid  = %d\r\n", HumidCurrent);
+  //  Serial.println("");
+  //  Serial.printf("Humid Status   = %d\r\n", HumidStatus);
+  //  Serial.printf("Humid Current Humid  = %d\r\n", HumidCurrent);
   //  Serial.printf("Humid Target Humid = %d\r\n", HumidTarget);
   //  Serial.printf("Humid Off Humid = %d\r\n", HumidTarget - HumidLowOffset);
   //  Serial.printf("Humid Start Time  = %d\r\n", HumidStartTime / 1000);
@@ -317,9 +316,8 @@ void SerialUpdate() {
   //  Serial.println("");
 
 
-  //printAddress(); //Look up one wire network devices
+  //  printAddress(); //Look up one wire network devices
   //  Serial.printf("Left Status     = %d,%d,%d\r\n",LLightS,LLightB,LdirU);
-
 }
 
 void WebSerialUpdate() {
@@ -369,33 +367,37 @@ void Simulate() {
 
 void loop() {
   //Simulate();
-  ArduinoOTA.handle();
+  //ArduinoOTA.handle();                                 //OTA DISABLE
   //WebSerial.println("READSENSORS");
 
   // Connect or reconnect to WiFi
   if (WiFi.status() != WL_CONNECTED) {
-    while (WiFi.status() != WL_CONNECTED){ 
+    //if setwifi fail is more than 45 seconds away from now
+
+    
+    //while (WiFi.status() != WL_CONNECTED){   //don't loop till connection
       Serial.print("Attempting to connect to SSID: ");
       Serial.println(SECRET_SSID);
       int retries = 0;
-      while (WiFi.status() != WL_CONNECTED && retries < 15) {
+      while (WiFi.status() != WL_CONNECTED && retries < 20) {
         WiFi.begin(ssid, pass); // Connect to WPA/WPA2 network. Change this line if using open or WEP network
         Serial.print(".");
         retries = retries+1;
-        delay(6000);
+        delay(1000);
       }
       if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\nConnected.\n");
         Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
-        ArduinoOTA.begin();
+       // ArduinoOTA.begin();                                       //OTA DISABLE
       }
       else {
         Serial.print("Connection Failure. Delaying before next attempt");
-        WiFi.disconnect(true);
+        WiFi.disconnect();
         retries = 0;
         delay(15000);
+        //setwififail time to "now"
       }
-    }
+    //}
   }
 
   // DHT LOOP TIME
@@ -472,9 +474,6 @@ void loop() {
   }
 
 
-
-
-
   //Handle Humidity Loop
   //*********************************************************************************************************************
   if (HumidStatus == 0) {
@@ -503,6 +502,7 @@ void loop() {
     }
     HumidEndTime = millis();
   }
-
-  //delay(250);
 }
+
+//change so wifi isn't blocking
+//add watchdog

@@ -140,7 +140,7 @@ xhttp.onreadystatechange = function() {
 };
 xhttp.open("GET", "/UpdateGroup", true);
 xhttp.send();
-}, 10000 ) ;
+}, 30000 ) ;
 
 </script>
 </body>

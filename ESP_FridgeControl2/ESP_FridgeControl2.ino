@@ -379,8 +379,8 @@ void loop() {
       Serial.print("Attempting to connect to SSID: ");
       Serial.println(SECRET_SSID);
       int retries = 0;
+      WiFi.begin(ssid, pass); // Connect to WPA/WPA2 network. Change this line if using open or WEP network      
       while (WiFi.status() != WL_CONNECTED && retries < 20) {
-        WiFi.begin(ssid, pass); // Connect to WPA/WPA2 network. Change this line if using open or WEP network
         Serial.print(".");
         retries = retries+1;
         delay(1000);
